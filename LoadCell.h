@@ -1,10 +1,15 @@
 // LoadCell.h
 #pragma once
-
+#include <ADS1256.h> 
 #include <stdint.h>
+
 #include "Main.h"
 
-class LoadCell_ADS1256 {
+extern volatile float g_lastBrakeKg;
+extern ADS1256& ADC();
+
+class LoadCell_ADS1256
+{
 private:
   float _zeroPoint = 0.0;
   float _varianceEstimate = 0.0;
@@ -21,7 +26,8 @@ public:
   void estimateVariance();
 
 public:
-  float getVarianceEstimate() const {
+  float getVarianceEstimate() const
+  {
     return _varianceEstimate;
   }
 };
