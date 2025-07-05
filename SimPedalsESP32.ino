@@ -35,7 +35,7 @@ constexpr uint32_t PRINT_INTERVAL_MS = 50;  // max one calibration line every 50
 // Globals
 // ---------------------------------------------------------------------------
 LoadCell_ADS1256 loadcell;
-KalmanFilter *kalman = nullptr;
+KalmanFilter *brakeKalman = nullptr;
 
 Bounce debouncer1;
 Bounce debouncer2;
@@ -56,7 +56,7 @@ static int32_t lastHandbrakeVal = -1;
 static bool lastBtn0 = false;
 static bool lastBtn1 = false;
 
-QueueHandle_t adcNotifyQ; // 1-byte ping queue
+QueueHandle_t adcNotifyQ;           // 1-byte ping queue
 volatile float g_lastBrakeKg = 0.0; // most-recent raw sample
 
 void IRAM_ATTR adsDrdyIsr() // ISR
@@ -111,8 +111,8 @@ void setup()
   // --- Load-cell initialisation ---
   loadcell.setLoadcellRating(RATED_CAPACITY_KG);
   loadcell.setZeroPoint();
-  loadcell.estimateVariance(); // determines sensor noise for KF
-  kalman = new KalmanFilter(loadcell.getVarianceEstimate());
+  loadcell.estimateVariance();
+  brakeKalman = new KalmanFilter(loadcell.getVarianceEstimate());
 
   adcNotifyQ = xQueueCreate(4, sizeof(uint8_t));
 
@@ -213,10 +213,9 @@ void loop()
   if (!calib.inCalibration())
   {
     // read and filter
-    float filtered = kalman->filteredValue(rawKg, 0, KF_PROCESS_NOISE_Q);
-
+    float brakeFiltered = brakeKalman->filteredValue(rawKg, 0, KF_PROCESS_NOISE_Q);
     int32_t brakeValue = NormalizeControllerOutputValue(
-        PEDAL_BRAKE, filtered,
+        PEDAL_BRAKE, brakeFiltered,
         calib.getMin(PEDAL_BRAKE),
         calib.getMax(PEDAL_BRAKE),
         MAX_GAME_OUTPUT);
@@ -259,10 +258,13 @@ void loop()
 
     // throttle USB reports and only on change of any control
     uint32_t now = millis();
-    bool axisChanged = (brakeValue != lastBrakeVal || accelValue != lastAccelVal || clutchValue != lastClutchVal || handbrakeValue != lastHandbrakeVal);
+    bool axisChanged = (brakeValue != lastBrakeVal ||
+                        accelValue != lastAccelVal ||
+                        clutchValue != lastClutchVal ||
+                        handbrakeValue != lastHandbrakeVal);
     bool btnChanged = (b0 != lastBtn0) || (b1 != lastBtn1);
 
-    if ((now - lastHidMs) >= 5 && (axisChanged || btnChanged))
+    if ((now - lastHidMs) >= 4 && (axisChanged || btnChanged))
     {
       sendState();
 
