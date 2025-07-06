@@ -21,6 +21,7 @@
 #include "Storage.h"
 #include "CalibrationManager.h"
 #include "HandbrakeSensor.h"
+#include "HallSampler.h"
 
 // ---------------------------------------------------------------------------
 // User-adjustable constants
@@ -30,6 +31,7 @@ constexpr uint16_t MAX_GAME_OUTPUT = 10000; // matches original joystick scaling
 constexpr uint8_t KF_PROCESS_NOISE_Q = 1;   // lower → more smoothing
 constexpr uint32_t SERIAL_BAUD = 115200;    // stable for USB-CDC on ESP32-S3
 constexpr uint32_t PRINT_INTERVAL_MS = 50;  // max one calibration line every 50 ms
+constexpr float ACCEL_CLUTCH_ALPHA = 0.30f; // unchanged
 
 // ---------------------------------------------------------------------------
 // Globals
@@ -55,6 +57,9 @@ static int32_t lastClutchVal = -1;
 static int32_t lastHandbrakeVal = -1;
 static bool lastBtn0 = false;
 static bool lastBtn1 = false;
+
+static float accelEma = 0.0f;
+static float clutchEma = 0.0f;
 
 QueueHandle_t adcNotifyQ;           // 1-byte ping queue
 volatile float g_lastBrakeKg = 0.0; // most-recent raw sample
@@ -102,11 +107,7 @@ void setup()
   debouncer2.attach(SHIFTER2_PIN);
   debouncer2.interval(10);
 
-  // analog axes
-  pinMode(ACCEL_PIN_1, INPUT);
-  pinMode(ACCEL_PIN_2, INPUT);
-  pinMode(CLUTCH_PIN_1, INPUT);
-  pinMode(CLUTCH_PIN_2, INPUT);
+  HallSampler::begin();
 
   // --- Load-cell initialisation ---
   loadcell.setLoadcellRating(RATED_CAPACITY_KG);
@@ -143,8 +144,8 @@ void loop()
 
   // read raw inputs
   float rawKg = loadcell.getReadingKg();
-  int accelRaw = analogRead(ACCEL_PIN_2);
-  int clutchRaw = analogRead(CLUTCH_PIN_2);
+  float accelRaw = HallSampler::getAccelRaw();
+  float clutchRaw = HallSampler::getClutchRaw();
   static long lastHandbrake = 0L;
 
   // then replace your current read with:
@@ -221,15 +222,17 @@ void loop()
         MAX_GAME_OUTPUT);
     SetBrake(brakeValue);
 
+    accelEma += ACCEL_CLUTCH_ALPHA * (accelRaw - accelEma);
     int32_t accelValue = NormalizeControllerOutputValue(
-        PEDAL_ACCEL, float(accelRaw),
+        PEDAL_ACCEL, accelEma,
         calib.getMin(PEDAL_ACCEL),
         calib.getMax(PEDAL_ACCEL),
         MAX_GAME_OUTPUT);
     SetAccelerator(accelValue);
 
+    clutchEma += ACCEL_CLUTCH_ALPHA * (clutchRaw - clutchEma);
     int32_t clutchValue = NormalizeControllerOutputValue(
-        PEDAL_CLUTCH, float(clutchRaw),
+        PEDAL_CLUTCH, clutchEma,
         calib.getMin(PEDAL_CLUTCH),
         calib.getMax(PEDAL_CLUTCH),
         MAX_GAME_OUTPUT);
