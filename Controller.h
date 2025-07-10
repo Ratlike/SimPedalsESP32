@@ -24,7 +24,7 @@ constexpr float ACCEL_DZ_HIGH = 0.05f;
 constexpr float CLUTCH_DZ_LOW = 0.05f;
 constexpr float CLUTCH_DZ_HIGH = 0.05f;
 
-constexpr float HANDBRAKE_DZ_LOW = 0.05f;
+constexpr float HANDBRAKE_DZ_LOW = 0.10f;
 constexpr float HANDBRAKE_DZ_HIGH = 0.00f;
 
 void SetupController();

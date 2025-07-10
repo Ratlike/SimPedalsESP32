@@ -20,7 +20,7 @@ private:
   float _S_cov;        // Residual covariance
 
   // Model noise constant (higher value = faster pedal response)
-  static constexpr float KF_MODEL_NOISE_FORCE_ACCELERATION = 20000.0f;
+  static constexpr float KF_MODEL_NOISE_FORCE_ACCELERATION = 100000.0f;
 
   void multiplyMatrices(float mat1[2][2], float mat2[2][2], float result[2][2]);
 

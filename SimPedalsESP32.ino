@@ -107,8 +107,6 @@ void setup()
   debouncer2.attach(SHIFTER2_PIN);
   debouncer2.interval(10);
 
-  HallSampler::begin();
-
   // --- Load-cell initialisation ---
   loadcell.setLoadcellRating(RATED_CAPACITY_KG);
   loadcell.setZeroPoint();
@@ -122,6 +120,8 @@ void setup()
 
   xTaskCreatePinnedToCore(adcSamplerTask, "adcTask",
                           4096, nullptr, 23, nullptr, 1);
+
+  HallSampler::begin();
 
   // HID
   SetupController();
@@ -143,7 +143,7 @@ void loop()
   bool sh2 = !digitalRead(SHIFTER2_PIN);
 
   // read raw inputs
-  float rawKg = loadcell.getReadingKg();
+  float rawKg = max(0.0f, loadcell.getReadingKg()); // Limit brake value to be above zero to avoid issues with Kalman filter
   float accelRaw = HallSampler::getAccelRaw();
   float clutchRaw = HallSampler::getClutchRaw();
   static long lastHandbrake = 0L;
