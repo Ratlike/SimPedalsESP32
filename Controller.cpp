@@ -12,10 +12,10 @@ static Joystick_ Joystick(
   JOYSTICK_DEFAULT_REPORT_ID,
   JOYSTICK_TYPE_GAMEPAD,
   CONTROLLER_BUTTON_COUNT, 0,  // buttons, hats
-  true, true, false,           // X Y Z
-  false, false, false,         // Rx Ry Rz
-  false, true,                 // rudder, throttle
-  false, true, false);         // accelerator, brake, steering
+  true, true, true,           // X Y Z
+  true, false, false,         // Rx Ry Rz
+  false, false,                 // rudder, throttle
+  false, false, false);         // accelerator, brake, steering
 
 void SetupController() {
 
@@ -27,8 +27,8 @@ void SetupController() {
 
   Joystick.setXAxisRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);
   Joystick.setYAxisRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);
-  Joystick.setThrottleRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);
-  Joystick.setBrakeRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);
+  Joystick.setZAxisRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);
+  Joystick.setRxAxisRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);
 
   delay(100);        // allow USB stack to settle
   Joystick.begin(false);  // manual USB start, no auto-report
@@ -38,25 +38,20 @@ bool IsControllerReady() {
   return true;  // USB is ready immediately after begin()
 }
 
-void SetControllerOutputValue(int32_t value) {
-  Joystick.setBrake(value);
-  Joystick.sendState();
-}
-
-void SetBrake(int32_t value) {
-  Joystick.setBrake(value);
-}
-
 void SetAccelerator(int32_t value) {
   Joystick.setXAxis(value);
 }
 
-void SetClutch(int32_t value) {
+void SetBrake(int32_t value) {
   Joystick.setYAxis(value);
 }
 
+void SetClutch(int32_t value) {
+  Joystick.setZAxis(value);
+}
+
 void SetHandbrake(int32_t value) {
-  Joystick.setThrottle(value);
+  Joystick.setRxAxis(value);
 }
 
 void SetButton(uint8_t idx, bool pressed) {

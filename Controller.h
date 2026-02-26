@@ -30,7 +30,6 @@ constexpr float HANDBRAKE_DZ_HIGH = 0.00f;
 void SetupController();
 bool IsControllerReady();
 
-void SetControllerOutputValue(int32_t value);
 int32_t NormalizeControllerOutputValue(Pedal p, float value, float minVal, float maxVal, float maxGameOutput);
 
 void SetBrake(int32_t value);
