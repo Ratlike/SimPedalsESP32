@@ -54,6 +54,10 @@ public:
   // Which pedal is currently selected in calibration
   Pedal getSelectedPedal() const;
 
+  // Auto-zero control
+  void setAutoZeroEnabled(bool enabled);
+  bool isAutoZeroEnabled() const;
+
 private:
   void toggleMode();
   void cyclePedal();
@@ -84,6 +88,7 @@ private:
   float lastMax_ = 0.0f;
 
   // Auto-zero: variance-based idle detection
+  bool          autoZeroEnabled_ = true;
   void autoZeroUpdate(const float raws[]);
   void resetAutoZero();
 

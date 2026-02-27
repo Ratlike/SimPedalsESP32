@@ -53,8 +53,10 @@ void CalibrationManager::update(bool sh1,
   }
 
   if (!calibMode_) {
-    float raws[] = { rawBrake, rawAccel, rawClutch, rawHandbrake };
-    autoZeroUpdate(raws);
+    if (autoZeroEnabled_) {
+      float raws[] = { rawBrake, rawAccel, rawClutch, rawHandbrake };
+      autoZeroUpdate(raws);
+    }
     return;
   }
 
@@ -191,6 +193,15 @@ void CalibrationManager::cyclePedal() {
   restSampleCount_[selected_] = 0;
   restWindowStartMs_[selected_] = millis();
   restCaptured_[selected_] = false;
+}
+
+void CalibrationManager::setAutoZeroEnabled(bool enabled) {
+  autoZeroEnabled_ = enabled;
+  if (!enabled) resetAutoZero();
+}
+
+bool CalibrationManager::isAutoZeroEnabled() const {
+  return autoZeroEnabled_;
 }
 
 void CalibrationManager::resetAutoZero() {

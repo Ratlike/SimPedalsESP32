@@ -32,6 +32,7 @@ constexpr uint8_t KF_PROCESS_NOISE_Q = 1;   // lower → more smoothing
 constexpr uint32_t SERIAL_BAUD = 115200;    // stable for USB-CDC on ESP32-S3
 constexpr uint32_t PRINT_INTERVAL_MS = 50;  // max one calibration line every 50 ms
 constexpr float ACCEL_CLUTCH_ALPHA = 0.30f; // unchanged
+constexpr bool ENABLE_AUTO_ZERO = true;     // periodically recalibrate pedal zero when idle
 
 // ---------------------------------------------------------------------------
 // Globals
@@ -129,6 +130,7 @@ void setup()
 
   // calibration storage
   calib.begin();
+  calib.setAutoZeroEnabled(ENABLE_AUTO_ZERO);
   Serial.println("Setup done");
 }
 
