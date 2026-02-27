@@ -90,6 +90,7 @@ void adcSamplerTask(void *) // FreeRTOS task
 void setup()
 {
   Serial.begin(SERIAL_BAUD);
+  Serial.enableReboot(false);   // prevent host DTR/RTS toggling from rebooting the ESP32
 
   unsigned long start = millis();
   while (!Serial && millis() - start < 3000)

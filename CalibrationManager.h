@@ -82,4 +82,22 @@ private:
   float lastRaw_ = 0.0f;
   float lastMin_ = 0.0f;
   float lastMax_ = 0.0f;
+
+  // Auto-zero: variance-based idle detection
+  void autoZeroUpdate(const float raws[]);
+  void resetAutoZero();
+
+  float         azMeanEma_[PEDAL_COUNT];
+  float         azVarEma_[PEDAL_COUNT];
+  unsigned long azStableStartMs_[PEDAL_COUNT];
+  bool          azStable_[PEDAL_COUNT];
+
+  // Auto-zero: accumulation window
+  bool          azAccumulating_[PEDAL_COUNT];
+  float         azAccumulator_[PEDAL_COUNT];
+  unsigned long azSampleCount_[PEDAL_COUNT];
+  unsigned long azWindowStartMs_[PEDAL_COUNT];
+
+  // Auto-zero: cooldown
+  unsigned long azLastRecalMs_[PEDAL_COUNT];
 };
