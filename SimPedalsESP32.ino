@@ -1,11 +1,7 @@
 /*
  *  PedalsESP32.ino – load-cell-only pedal firmware
  *  Hardware: ESP32-S3, ADS1256 load-cell amplifier, no servo
- *
- *  Fixes:
- *    • Throttles calibration prints so the USB-CDC transmit buffer never
- *      overflows and blocks further output
- *    • Uses a conservative baud rate that is known to be reliable
+ *  Calibration via WebHID feature reports (no USB CDC serial)
  */
 
 #include <Arduino.h>
@@ -29,8 +25,6 @@
 constexpr float RATED_CAPACITY_KG = 200.0f; // load-cell full-scale rating
 constexpr uint16_t MAX_GAME_OUTPUT = 10000; // matches original joystick scaling
 constexpr uint8_t KF_PROCESS_NOISE_Q = 1;   // lower → more smoothing
-constexpr uint32_t SERIAL_BAUD = 115200;    // stable for USB-CDC on ESP32-S3
-constexpr uint32_t PRINT_INTERVAL_MS = 50;  // max one calibration line every 50 ms
 constexpr float ACCEL_CLUTCH_ALPHA = 0.30f; // unchanged
 constexpr bool ENABLE_AUTO_ZERO = true;     // periodically recalibrate pedal zero when idle
 
@@ -48,8 +42,6 @@ CalibrationManager calib;
 HandbrakeSensor handbrake(HANDBRAKE_DOUT, HANDBRAKE_SCK);
 
 int lastButtonState[2] = {0, 0};
-
-static const char *pedalNames[] = {"Brake", "Accelerator", "Clutch", "Handbrake"};
 
 static uint32_t lastHidMs = 0;
 static int32_t lastBrakeVal = -1;
@@ -90,16 +82,6 @@ void adcSamplerTask(void *) // FreeRTOS task
 // ---------------------------------------------------------------------------
 void setup()
 {
-  Serial.begin(SERIAL_BAUD);
-  Serial.enableReboot(false);   // prevent host DTR/RTS toggling from rebooting the ESP32
-
-  unsigned long start = millis();
-  while (!Serial && millis() - start < 3000)
-  {
-    delay(10);
-  }
-  Serial.println("Starting setup");
-
   // buttons
   pinMode(SHIFTER1_PIN, INPUT_PULLUP);
   debouncer1.attach(SHIFTER1_PIN);
@@ -131,7 +113,7 @@ void setup()
   // calibration storage
   calib.begin();
   calib.setAutoZeroEnabled(ENABLE_AUTO_ZERO);
-  Serial.println("Setup done");
+  calibHid.setCalibrationManager(&calib);
 }
 
 // ---------------------------------------------------------------------------
@@ -159,59 +141,18 @@ void loop()
   long rawHandbrake = lastHandbrake;
 
   // update calibration manager
-  calib.update(sh1, sh2, rawKg, float(accelRaw), float(clutchRaw), float(rawHandbrake));
+  calib.update(rawKg, float(accelRaw), float(clutchRaw), float(rawHandbrake));
 
-  // Print mode-toggle events
-  if (calib.hasModeChanged())
+  // Update calibration HID feature report with live data
   {
-    if (calib.inCalibration())
+    float raws[4] = {rawKg, float(accelRaw), float(clutchRaw), float(rawHandbrake)};
+    float mins[4], maxs[4];
+    for (int i = 0; i < 4; i++)
     {
-      Serial.println("Enter calibration mode");
+      mins[i] = calib.getMin(Pedal(i));
+      maxs[i] = calib.getMax(Pedal(i));
     }
-    else
-    {
-      Serial.println("Exit calibration mode — saved ranges:");
-      for (int i = 0; i < PEDAL_COUNT; ++i)
-      {
-        Serial.print(pedalNames[i]);
-        Serial.print("  min=");
-        Serial.print(calib.getMin(Pedal(i)), 2);
-        Serial.print("  max=");
-        Serial.println(calib.getMax(Pedal(i)), 2);
-      }
-    }
-    calib.clearModeChanged();
-  }
-
-  // Print pedal-cycle events
-  if (calib.hasPedalCycled())
-  {
-    Pedal p = calib.getSelectedPedal();
-    Serial.print("Now calibrating ");
-    Serial.println(pedalNames[p]);
-    calib.clearPedalCycled();
-  }
-
-  // Print rest-min / max events (throttled)
-  if (calib.inCalibration())
-  {
-    // if (calib.inCalibration() && calib.hasRangeChanged()) {
-    static uint32_t lastPrint = 0;
-    uint32_t now = millis();
-    if (now - lastPrint >= PRINT_INTERVAL_MS && Serial.availableForWrite() >= 32)
-    {
-      Pedal p = calib.getSelectedPedal();
-      Serial.print(pedalNames[p]);
-      Serial.print("  raw=");
-      Serial.print(calib.getCurrentRaw(), 2);
-      Serial.print("  min=");
-      Serial.print(calib.lastMin(), 2);
-      Serial.print("  max=");
-      Serial.println(calib.lastMax(), 2);
-      lastPrint = now;
-
-      calib.clearRangeChanged();
-    }
+    calibHid.updateState(calib.inCalibration(), raws, mins, maxs);
   }
 
   if (!calib.inCalibration())

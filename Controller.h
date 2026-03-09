@@ -4,6 +4,9 @@
 #include "Arduino.h"
 #include "Main.h"
 #include "CalibrationManager.h"
+#include "CalibrationHID.h"
+
+extern CalibrationHID calibHid;
 
 /*#ifdef CONFIG_IDF_TARGET_ESP32S2 ||ARDUINO_ESP32S3_DEV || CONFIG_IDF_TARGET_ESP32S3
   #define USB_JOYSTICK

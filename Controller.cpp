@@ -3,6 +3,9 @@
 #include <Joystick_ESP32S2.h>
 #include <cmath>  // for fabsf
 #include "CalibrationManager.h"
+#include "CalibrationHID.h"
+
+CalibrationHID calibHid;
 
 /*
  * Single-axis USB HID joystick.
@@ -24,6 +27,8 @@ void SetupController() {
   USB.productName("Simracing Pedals");
   USB.manufacturerName("OpenSource");
   USB.begin();
+
+  calibHid.begin();  // register before HID.begin() called by Joystick
 
   Joystick.setXAxisRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);
   Joystick.setYAxisRange(JOYSTICK_MIN_VALUE, JOYSTICK_MAX_VALUE);

@@ -2,7 +2,8 @@
 #pragma once
 #include <Preferences.h>
 
-class Storage {
+class Storage
+{
 public:
   // must be called before any load/save
   void begin();

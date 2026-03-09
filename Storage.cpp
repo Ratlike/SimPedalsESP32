@@ -2,11 +2,13 @@
 #include "Storage.h"
 #include "Main.h"
 
-void Storage::begin() {
+void Storage::begin()
+{
   // no-op here; each load/save opens+closes
 }
 
-void Storage::loadCalibration(float minVals[], float maxVals[]) {
+void Storage::loadCalibration(float minVals[], float maxVals[])
+{
   prefs.begin("calib", false);
   minVals[0] = prefs.getFloat("brkMin", 0.0f);
   maxVals[0] = prefs.getFloat("brkMax", LOADCELL_WEIGHT_RATING_KG);
@@ -19,7 +21,8 @@ void Storage::loadCalibration(float minVals[], float maxVals[]) {
   prefs.end();
 }
 
-void Storage::saveCalibration(const float minVals[], const float maxVals[]) {
+void Storage::saveCalibration(const float minVals[], const float maxVals[])
+{
   prefs.begin("calib", false);
   prefs.putFloat("brkMin", minVals[0]);
   prefs.putFloat("brkMax", maxVals[0]);

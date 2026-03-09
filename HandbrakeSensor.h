@@ -3,7 +3,8 @@
 #include <HX711.h>
 
 // Provides direct access to the HX711 load-cell ADC.
-class HandbrakeSensor {
+class HandbrakeSensor
+{
 public:
   // Initializes HX711 on specified data and clock pins.
   HandbrakeSensor(uint8_t doutPin, uint8_t sckPin);
